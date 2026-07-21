@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Home Run Revolution</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-svg-annotation@2.5.1"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>The Home Run Revolution</h1>
+    <p class="subtitle">How Major League Baseball became a game of launch angles and barrels.</p>
+  </header>
+
+  <nav id="scene-nav" aria-label="Scene navigation">
+    <button class="nav-btn" data-scene="0">1 · The Surge</button>
+    <button class="nav-btn" data-scene="1">2 · The Barrel Zone</button>
+    <button class="nav-btn" data-scene="2">3 · Swinging Up</button>
+    <button class="nav-btn" data-scene="3">4 · Explore</button>
+  </nav>
+
+  <section id="scene-header">
+    <h2 id="scene-title">Loading…</h2>
+    <p id="scene-narration"></p>
+  </section>
+
+  <section id="controls" hidden></section>
+
+  <main>
+    <svg id="chart" role="img" aria-label="Chart"></svg>
+    <div id="tooltip" class="tooltip" hidden></div>
+  </main>
+
+  <footer id="scene-footer">
+    <button id="prev-btn">◀ Prev</button>
+    <span id="scene-progress">Scene 1 of 4</span>
+    <button id="next-btn">Next ▶</button>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
