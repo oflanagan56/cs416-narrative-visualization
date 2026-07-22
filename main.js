@@ -307,7 +307,7 @@ function sceneExplore(f) {
 
   const dim = state.highlight === "hr";
   drawScatter(ctx, balls, x, y, ox, oy, dim);
-  legend(f.g, f.width, [["Home run", COL.hr], ["Other batted ball", COL.other]]);
+  legend(f.g, [["Home run", COL.hr], ["Other batted ball", COL.other]], f.width - 160, 4);
 
   // hover
   const pts = balls.map(d => ({ d, px: ox + x(d.ev), py: oy + y(d.la) }));
