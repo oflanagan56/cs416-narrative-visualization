@@ -60,8 +60,14 @@ Promise.all([
     events: d.events,
     is_hr: +d.is_hr === 1,
   })),
-]).then(([hr, launch, teams, balls]) => {
-  DATA = { hr, launch, teams, balls };
+  d3.csv("data/player_transformations.csv", d => ({
+    player: d.player,
+    la0: +d.la_2015, la1: +d.la_2025,
+    ev0: +d.ev_2015, ev1: +d.ev_2025,
+    br0: +d.barrel_2015, br1: +d.barrel_2025,
+  })),
+]).then(([hr, launch, teams, balls, players]) => {
+  DATA = { hr, launch, teams, balls, players };
   DATA.seasons = Array.from(new Set(balls.map(d => d.season))).sort((a, b) => a - b);
   if (!DATA.seasons.includes(state.season)) state.season = DATA.seasons[DATA.seasons.length - 1];
   DATA.teams_list = Array.from(new Set(balls.map(d => d.team))).sort();
@@ -358,6 +364,63 @@ function exploreControls(el) {
   el.append("span").attr("class", "hint").text("Hover any point for the play →");
 }
 
+function scenePlayers(f) {
+  useCanvas(false);
+  hideTooltip();
+  const data = DATA.players.map(d => ({ ...d, dla: d.la1 - d.la0 })).sort((a, b) => b.dla - a.dla);
+
+  const x = d3.scaleLinear().domain([82, 96]).range([0, f.width]);
+  const y = d3.scaleLinear().domain([2, 24]).nice().range([f.height, 0]);
+
+  f.g.append("g").attr("class", "grid").call(d3.axisLeft(y).ticks(6).tickSize(-f.width).tickFormat(""));
+  f.g.append("g").attr("class", "axis").attr("transform", `translate(0,${f.height})`).call(d3.axisBottom(x).ticks(7));
+  f.g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(6).tickFormat(d => d + "°"));
+  f.g.append("text").attr("class", "axis-label").attr("x", f.width).attr("y", f.height - 8)
+    .attr("text-anchor", "end").text("Exit velocity (mph) →");
+  f.g.append("text").attr("class", "axis-label").attr("y", -12).text("Launch angle (°)");
+
+  const defs = svg.append("defs");
+  [["arrow-up", COL.up], ["arrow-dim", COL.grid]].forEach(([id, col]) => {
+    defs.append("marker").attr("id", id).attr("viewBox", "0 0 10 10")
+      .attr("refX", 8).attr("refY", 5).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto")
+      .append("path").attr("d", "M0,0 L10,5 L0,10 z").attr("fill", col);
+  });
+
+  const emph = new Set(data.slice(0, 6).map(d => d.player));
+  const isUp = d => emph.has(d.player);
+
+  f.g.selectAll("line.move").data(data).join("line")
+    .attr("x1", d => x(d.ev0)).attr("y1", d => y(d.la0))
+    .attr("x2", d => x(d.ev1)).attr("y2", d => y(d.la1))
+    .attr("stroke", d => isUp(d) ? COL.up : COL.grid)
+    .attr("stroke-width", d => isUp(d) ? 2.5 : 1.2)
+    .attr("opacity", d => isUp(d) ? 0.95 : 0.4)
+    .attr("marker-end", d => `url(#${isUp(d) ? "arrow-up" : "arrow-dim"})`);
+  f.g.selectAll("circle.start").data(data).join("circle")
+    .attr("cx", d => x(d.ev0)).attr("cy", d => y(d.la0)).attr("r", 2.5)
+    .attr("fill", "none").attr("stroke", d => isUp(d) ? COL.up : COL.grid).attr("opacity", d => isUp(d) ? 0.9 : 0.4);
+  const star = data[0];
+  const labeled = data.filter(d => isUp(d) && d.player !== star.player)
+    .map(d => ({ d, ex: x(d.ev1), ey: y(d.la1) }))
+    .sort((a, b) => a.ey - b.ey);
+  for (let i = 1; i < labeled.length; i++)
+    if (labeled[i].ey - labeled[i - 1].ey < 19) labeled[i].ey = labeled[i - 1].ey + 19;
+  const ll = f.g.append("g");
+  labeled.forEach(o => {
+    ll.append("line").attr("x1", o.ex).attr("y1", y(o.d.la1)).attr("x2", o.ex + 6).attr("y2", o.ey)
+      .attr("stroke", COL.up).attr("stroke-width", 0.7).attr("opacity", 0.5);
+    ll.append("text").attr("class", "axis-label").attr("x", o.ex + 9).attr("y", o.ey + 3)
+      .attr("fill", COL.up).text(o.d.player);
+  });
+
+  legend(f.g, [["Biggest movers", COL.up], ["Other holdovers", COL.grid]], 12, 16);
+
+  annotate(f.g, [
+    { note: { title: "Same hitter, new swing", label: `${star.player}: launch angle +${star.dla.toFixed(1)}°, exit velocity +${(star.ev1 - star.ev0).toFixed(1)} mph, barrels ${star.br0.toFixed(0)}% → ${star.br1.toFixed(0)}%.`, wrap: 200 },
+      x: x(star.ev1), y: y(star.la1), dx: -200, dy: -46 },
+  ]);
+}
+
 // ---- scatter + legend drawing ----
 
 function drawScatter(ctx, balls, x, y, ox, oy, dimNonHr) {
@@ -396,6 +459,7 @@ const scenes = [
   { title: "The Barrel Zone", subtitle: "Every batted ball of 2025, by exit velocity and launch angle. Home runs cluster in one tight pocket.", render: sceneBarrel },
   { title: "Swinging Up", subtitle: "Hitters league-wide changed their swings — launch angle and hard contact both trended up.", render: sceneSwing },
   { title: "Who Bought In", subtitle: "Not every team embraced the fly-ball turn. Each line is a team's launch angle, 2015 to 2025.", render: sceneTeams },
+  { title: "Reinventing the Swing", subtitle: "Individual hitters remade themselves. Each arrow runs from a player's 2015 contact to his 2025 contact — up and right, into the barrel zone.", render: scenePlayers },
   { title: "Explore", subtitle: "Pick a season and team, then hover any point to see the hitter, the play, and the numbers.", render: sceneExplore, controls: exploreControls },
 ];
 
