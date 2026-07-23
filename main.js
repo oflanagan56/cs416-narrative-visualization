@@ -208,8 +208,8 @@ function sceneBarrel(f) {
   const cx = x(d3.mean(hrs, d => d.ev));
   const cy = y(d3.mean(hrs, d => d.la));
   annotate(f.g, [
-    { note: { title: "The barrel zone", label: "High exit velocity (~98+ mph) at a 10–35° launch. Almost every home run lives in this pocket.", wrap: 200 },
-      x: cx, y: cy, dx: -150, dy: -70 },
+    { note: { title: "The barrel zone", label: "High exit velocity (~98+ mph) at a 10–35° launch. Almost every home run lives in this pocket.", wrap: 190, align: "middle" },
+      x: cx, y: cy, dx: -235, dy: -18 },
     { note: { title: "Weak contact", label: "Low speed or bad angle — these stay in the park.", wrap: 150 },
       x: x(70), y: y(-30), dx: 60, dy: 20 },
   ]);
@@ -219,35 +219,38 @@ function sceneSwing(f) {
   useCanvas(false);
   hideTooltip();
   const data = DATA.launch;
-  const x = d3.scaleLinear().domain([2015, 2025]).range([0, f.width]);
-  const yL = d3.scaleLinear().domain([9, 15]).range([f.height, 0]);
-  const yR = d3.scaleLinear().domain([30, 43]).range([f.height, 0]);
+  const base = data[0];
+  const series = [
+    { key: "launch_angle", label: "Launch angle", color: COL.hr, dash: null },
+    { key: "hard_hit_rate", label: "Hard-hit rate", color: COL.down, dash: "5 4" },
+  ];
+  const pct = (d, s) => (d[s.key] / base[s.key] - 1) * 100;
 
-  f.g.append("g").attr("class", "grid")
-    .call(d3.axisLeft(yL).ticks(6).tickSize(-f.width).tickFormat(""));
+  const x = d3.scaleLinear().domain([2015, 2025]).range([0, f.width]);
+  const y = d3.scaleLinear()
+    .domain([-1, d3.max(data, d => Math.max(pct(d, series[0]), pct(d, series[1]))) * 1.15])
+    .nice().range([f.height, 0]);
+
+  f.g.append("g").attr("class", "grid").call(d3.axisLeft(y).ticks(6).tickSize(-f.width).tickFormat(""));
   f.g.append("g").attr("class", "axis").attr("transform", `translate(0,${f.height})`)
     .call(d3.axisBottom(x).tickFormat(d3.format("d")).ticks(10));
-  f.g.append("g").attr("class", "axis").call(d3.axisLeft(yL).ticks(6).tickFormat(d => d + "°"));
-  f.g.append("g").attr("class", "axis").attr("transform", `translate(${f.width},0)`)
-    .call(d3.axisRight(yR).ticks(6).tickFormat(d => d + "%"));
-  f.g.append("text").attr("class", "axis-label").attr("y", -12).text("Avg launch angle");
+  f.g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(6).tickFormat(d => (d > 0 ? "+" : "") + d + "%"));
+  f.g.append("text").attr("class", "axis-label").attr("y", -12).text("Change since 2015");
 
-  const lineL = d3.line().x(d => x(d.season)).y(d => yL(d.launch_angle));
-  const lineR = d3.line().x(d => x(d.season)).y(d => yR(d.hard_hit_rate));
-  f.g.append("path").datum(data).attr("class", "series-line").attr("stroke", COL.hr).attr("d", lineL);
-  f.g.append("path").datum(data).attr("class", "series-line").attr("stroke", COL.up)
-    .attr("stroke-dasharray", "5 4").attr("d", lineR);
-  f.g.selectAll("circle.la").data(data).join("circle").attr("r", 3)
-    .attr("cx", d => x(d.season)).attr("cy", d => yL(d.launch_angle)).attr("fill", COL.hr);
+  series.forEach((s, i) => {
+    const line = d3.line().x(d => x(d.season)).y(d => y(pct(d, s)));
+    f.g.append("path").datum(data).attr("class", "series-line").attr("stroke", s.color)
+      .attr("stroke-dasharray", s.dash).attr("d", line);
+    f.g.selectAll(`circle.k${i}`).data(data).join("circle").attr("class", `k${i}`).attr("r", 3)
+      .attr("cx", d => x(d.season)).attr("cy", d => y(pct(d, s))).attr("fill", s.color);
+  });
 
-  legend(f.g, [["Launch angle", COL.hr], ["Hard-hit %", COL.up]], 12, 12);
+  legend(f.g, series.map(s => [s.label, s.color]), 12, 12);
 
-  const at = s => data.find(d => d.season === s);
+  const last = data[data.length - 1];
   annotate(f.g, [
-    { note: { title: "+2.6° since 2015", label: "League launch angle climbed from 10.9° to 13.5° — hitters swinging up on purpose.", wrap: 180 },
-      x: x(2024), y: yL(at(2024).launch_angle), dx: -30, dy: 78 },
-    { note: { title: "Harder, too", label: "Hard-hit rate rose from 33% to 41%.", wrap: 150 },
-      x: x(2018), y: yR(at(2018).hard_hit_rate), dx: -20, dy: -70 },
+    { note: { title: "Both rose about a quarter", label: `Launch angle +${pct(last, series[0]).toFixed(0)}% and hard-hit rate +${pct(last, series[1]).toFixed(0)}% since 2015 — hitters swing up and hit harder.`, wrap: 190 },
+      x: x(2024), y: y(pct(data.find(d => d.season === 2024), series[0])), dx: -150, dy: 150 },
   ]);
 }
 
