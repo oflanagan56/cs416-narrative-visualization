@@ -480,8 +480,10 @@ function goTo(i) {
   if (scene.controls) { controlsEl.attr("hidden", null); scene.controls(controlsEl); }
   else controlsEl.attr("hidden", true);
 
+  const main = d3.select("main").style("opacity", 0.25);
   const margin = { top: 24, right: 30, bottom: 40, left: 60 };
   scene.render(frame(margin));
+  requestAnimationFrame(() => main.style("opacity", 1));
 }
 
 d3.selectAll(".nav-btn").on("click", function () { goTo(+d3.select(this).attr("data-scene")); });

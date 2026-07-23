@@ -46,6 +46,12 @@ nav {
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
+.nav-btn {
+  flex: 1 1 0;
+  min-width: 108px;
+  text-align: center;
+  white-space: nowrap;
+}
 .nav-btn:hover, #prev-btn:hover, #next-btn:hover { border-color: var(--accent); }
 .nav-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
@@ -137,3 +143,15 @@ footer {
 }
 #scene-progress { color: var(--muted); font-size: 0.85rem; }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.credits {
+  max-width: var(--max-w);
+  margin: -0.5rem auto 3rem;
+  padding-inline: 1.25rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
+  opacity: 0.75;
+}
+
+main { transition: opacity 0.25s ease; }
