@@ -293,8 +293,8 @@ function sceneTeams(f) {
 
   const top = rows[0];
   annotate(f.g, [
-    { note: { title: "Nobody bought in more", label: `${top.team} lifted its team launch angle +${top.delta.toFixed(1)}° — the league's steepest climb.`, wrap: 190 },
-      x: x(String(s1)), y: y(top.b), dx: -110, dy: 30 },
+    { note: { title: "Nobody bought in more", label: `${top.team} lifted its team launch angle +${top.delta.toFixed(1)}° — the league's steepest climb.`, wrap: 175 },
+      x: x(String(s0)), y: y(top.a), dx: 26, dy: 46 },
   ]);
 }
 
@@ -402,25 +402,22 @@ function scenePlayers(f) {
   f.g.selectAll("circle.start").data(data).join("circle")
     .attr("cx", d => x(d.ev0)).attr("cy", d => y(d.la0)).attr("r", 2.5)
     .attr("fill", "none").attr("stroke", d => isUp(d) ? COL.up : COL.grid).attr("opacity", d => isUp(d) ? 0.9 : 0.4);
-  const star = data[0];
-  const labeled = data.filter(d => isUp(d) && d.player !== star.player)
-    .map(d => ({ d, ex: x(d.ev1), ey: y(d.la1) }))
-    .sort((a, b) => a.ey - b.ey);
-  for (let i = 1; i < labeled.length; i++)
-    if (labeled[i].ey - labeled[i - 1].ey < 19) labeled[i].ey = labeled[i - 1].ey + 19;
-  const ll = f.g.append("g");
-  labeled.forEach(o => {
-    ll.append("line").attr("x1", o.ex).attr("y1", y(o.d.la1)).attr("x2", o.ex + 6).attr("y2", o.ey)
-      .attr("stroke", COL.up).attr("stroke-width", 0.7).attr("opacity", 0.5);
-    ll.append("text").attr("class", "axis-label").attr("x", o.ex + 9).attr("y", o.ey + 3)
-      .attr("fill", COL.up).text(o.d.player);
-  });
-
   legend(f.g, [["Biggest movers", COL.up], ["Other holdovers", COL.grid]], 12, 16);
 
+  const movers = data.slice(0, 6);
+  const list = f.g.append("g").attr("transform", "translate(12, 74)");
+  list.append("text").attr("class", "axis-label").attr("fill", COL.up)
+    .style("font-weight", 600).text("Biggest launch-angle gains, ’15→’25");
+  movers.forEach((d, i) => {
+    const row = list.append("text").attr("class", "axis-label").attr("y", 22 + i * 19);
+    row.append("tspan").attr("fill", COL.ink).text(d.player);
+    row.append("tspan").attr("fill", COL.up).style("font-weight", 600).text(`  +${d.dla.toFixed(1)}°`);
+  });
+
+  const star = data[0];
   annotate(f.g, [
-    { note: { title: "Same hitter, new swing", label: `${star.player}: launch angle +${star.dla.toFixed(1)}°, exit velocity +${(star.ev1 - star.ev0).toFixed(1)} mph, barrels ${star.br0.toFixed(0)}% → ${star.br1.toFixed(0)}%.`, wrap: 200 },
-      x: x(star.ev1), y: y(star.la1), dx: -200, dy: -46 },
+    { note: { title: "Same hitter, new swing", label: `${star.player} added exit velocity too: +${(star.ev1 - star.ev0).toFixed(1)} mph and barrels ${star.br0.toFixed(0)}% → ${star.br1.toFixed(0)}%.`, wrap: 180, align: "middle" },
+      x: x(star.ev1), y: y(star.la1), dx: 40, dy: 96 },
   ]);
 }
 

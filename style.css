@@ -80,7 +80,7 @@ main { margin-top: 1rem; position: relative; height: 520px; }
 .annotation-layer .annotation-note-label { fill: var(--muted); }
 .annotation-layer .connector,
 .annotation-layer .annotation-subject path { stroke: var(--accent); }
-.annotation-layer .annotation-note-bg { fill: transparent; }
+.annotation-layer .annotation-note-bg { fill: var(--bg); fill-opacity: 0.82; }
 
 .legend text { fill: var(--muted); font-size: 12px; }
 
